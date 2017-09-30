@@ -27,15 +27,15 @@
     then
       openstack service create --name nova --description "OpenStack Compute" compute
     fi
-    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute public")" == "0" ))
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "nova public")" == "0" ))
     then
       openstack endpoint create --region RegionOne compute public http://{{ ansible_default_ipv4.address }}:8774/v2.1
     fi
-    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute internal")" == "0" ))
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "nova internal")" == "0" ))
     then
       openstack endpoint create --region RegionOne compute internal http://{{ ansible_default_ipv4.address }}:8774/v2.1
     fi
-    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute admin")" == "0" ))
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "nova admin")" == "0" ))
     then
       openstack endpoint create --region RegionOne compute admin http://{{ ansible_default_ipv4.address }}:8774/v2.1
     fi
