@@ -1,0 +1,102 @@
+---
+
+- name: Create Nova Database
+  mysql_db:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - nova_api
+    - nova
+    - nova_cell0
+- name: Create Nova user in Database
+  mysql_user:
+    name: nova
+    host: '%'
+    password: nova
+    priv: 'nova_api.*:ALL/nova.*:ALL/nova_cell0.*:ALL'
+    state: present
+- name: Create Nova user, service and endpoint in Keystone
+  shell: |
+    . ~/openrc
+    if (( "$(openstack user list -f value -c Name | grep -c nova)" == "0" ))
+    then
+      openstack user create --domain default --password nova nova
+    fi
+    openstack role add --project service --user nova admin
+    if (( "$(openstack service list -f value -c Name | grep -c nova)" == "0" ))
+    then
+      openstack service create --name nova --description "OpenStack Compute" compute
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute public")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne compute public http://{{ ansible_default_ipv4.address }}:8774/v2.1
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute internal")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne compute internal http://{{ ansible_default_ipv4.address }}:8774/v2.1
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "compute admin")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne compute admin http://{{ ansible_default_ipv4.address }}:8774/v2.1
+    fi
+  args:
+    executable: /bin/bash
+- name: Create Placement user, service and endpoint in Keystone
+  shell: |
+    . ~/openrc
+    if (( "$(openstack user list -f value -c Name | grep -c placement)" == "0" ))
+    then
+      openstack user create --domain default --password placement placement
+    fi
+    openstack role add --project service --user placement admin
+    if (( "$(openstack service list -f value -c Name | grep -c placement)" == "0" ))
+    then
+      openstack service create --name placement --description "Placement API" placement
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "placement public")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne placement public http://{{ ansible_default_ipv4.address }}:8778
+    fi  
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "placement internal")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne placement internal http://{{ ansible_default_ipv4.address }}:8778
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "placement admin")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne placement admin http://{{ ansible_default_ipv4.address }}:8778
+    fi
+  args:
+    executable: /bin/bash
+- name: Install Nova on Controllers
+  apt:
+    name:
+      - nova-api
+      - nova-conductor
+      - nova-consoleauth
+      - nova-novncproxy
+      - nova-scheduler
+      - nova-placement-api
+    update_cache: yes
+- name: Configure Nova on controllers
+  template:
+    src: 'templates/nova.conf.j2'
+    dest: '/etc/nova/nova.conf'
+- name: Populate nova databases
+  shell: |
+    su -s /bin/sh -c "nova-manage api_db sync" nova
+    su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+    su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+    su -s /bin/sh -c "nova-manage db sync" nova
+- name: Check that cell0 and cell1 registered correctly
+  shell: |
+    nova-manage cell_v2 list_cells
+- name: Restart Nova services
+  service:
+    name: '{{ item }}'
+    state: restarted
+  with_items:
+    - nova-api
+    - nova-consoleauth
+    - nova-scheduler
+    - nova-conductor
+    - nova-novncproxy

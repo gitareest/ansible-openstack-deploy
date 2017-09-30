@@ -1,0 +1,23 @@
+---
+- name: Install MariaDB packages
+  apt:
+    name: 
+      - mariadb-server
+      - python-pymysql
+    update_cache: yes
+- name: Configure MariaDB
+  template:
+    src: templates/mariadb.cnf.j2
+    dest: /etc/mysql/mariadb.conf.d/99-openstack.cnf
+- name: Restart MariaDB service
+  service:
+    name: mysql
+    state: restarted
+
+- name: Secure MariaDB
+  shell: |
+    mysql -e "UPDATE mysql.user SET Password = PASSWORD(' {{ mysql_root_pass }} ') WHERE User = 'root'";
+    mysql -e "DROP USER ''@'localhost'";
+    mysql -e "DROP USER ''@'$(hostname)'";
+    mysql -e "DROP DATABASE test";
+    mysql -e "FLUSH PRIVILEGES"

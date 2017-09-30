@@ -1,0 +1,12 @@
+---
+- name: Install RabbitMQ
+  apt:
+    name:
+      - rabbitmq-server
+    update_cache: yes
+
+- name: Add RabbitMQ openstack user
+  shell: |
+    rabbitmqctl add_user openstack {{ rabbitmq_openstack_pass }};
+    rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+

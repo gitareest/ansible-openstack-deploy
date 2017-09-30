@@ -1,0 +1,72 @@
+---
+
+- name: Create Keystone Database
+  mysql_db:
+    name: keystone
+    state: present
+- name: Create Keystone user
+  mysql_user:
+    name: keystone
+    host: '%'
+    password: keystone
+    priv: 'keystone.*:ALL'
+    state: present
+- name: Install Keystone
+  apt:
+    name:
+      - keystone
+    update_cache: yes
+- name: Configure Keystone
+  template:
+    src: templates/keystone.conf.j2
+    dest: /etc/keystone/keystone.conf
+- name: Populate keystone database
+  shell: |
+    su -s /bin/sh -c "keystone-manage db_sync" keystone
+    keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+    keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    keystone-manage bootstrap --bootstrap-password {{ openstack_admin_pass }} \
+                              --bootstrap-admin-url http://{{ ansible_default_ipv4.address }}:35357/v3/ \
+                              --bootstrap-internal-url http://{{ ansible_default_ipv4.address }}:5000/v3/ \
+                              --bootstrap-public-url http://{{ ansible_default_ipv4.address }}:5000/v3/ \
+                              --bootstrap-region-id RegionOne
+- name: Configure Apache2 for Keystone
+  lineinfile:
+    dest: /etc/apache2/apache2.conf
+    regexp: '^ServerName'
+    line: 'ServerName {{ ansible_default_ipv4.address }}'
+- name: Restart Apache2 service
+  service:
+    name: apache2
+    state: restarted
+- name: Remove default keystone DB
+  file:
+    path: /var/lib/keystone/keystone.db
+    state: absent
+- name: Configure admin account
+  shell: |
+    export OS_USERNAME=admin
+    export OS_PASSWORD={{ openstack_admin_pass }}
+    export OS_PROJECT_NAME=admin
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_AUTH_URL=http://{{ ansible_default_ipv4.address }}:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    openstack project create --domain default --description "Service Project" service
+    openstack project create --domain default --description "Demo Project" demo
+    openstack user create --domain default --password demo demo
+    openstack role create user
+    openstack role add --project demo --user demo user
+- name: Secure Keystone
+  replace:
+    dest: /etc/keystone/keystone-paste.ini
+    regexp: 'admin_token_auth'
+    replace: ''
+- name: Create openrc file
+  template:
+    src: templates/openrc.j2
+    dest: ~/openrc
+- name: Check Keystone service
+  shell: |
+    . ~/openrc
+    openstack token issue

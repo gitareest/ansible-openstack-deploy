@@ -1,0 +1,24 @@
+---
+
+- name: Install Nova on Computes
+  apt:
+    name:
+      - nova-compute
+    update_cache: yes
+- name: Configure Nova on computes
+  template:
+    src: 'templates/nova.conf.j2'
+    dest: '/etc/nova/nova.conf'
+- name: Configure QEMU if there is no hardware virt support on the computes
+  shell: |
+    if (( $(egrep -c '(vmx|svm)' /proc/cpuinfo) < 1 ))
+    then
+      echo "Hardware virtualization is unsupported"
+      echo "need to set [libvirt]/virt_type = qemu in /etc/nova.conf on the compute node"
+    fi
+  args:
+    executable: /bin/bash
+- name: Restart Nova services on computes
+  service:
+    name: nova-compute
+    state: restarted

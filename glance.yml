@@ -1,0 +1,77 @@
+---
+
+- name: Create Glance Database
+  mysql_db:
+    name: glance
+    state: present
+- name: Create Glance user in Database
+  mysql_user:
+    name: glance
+    host: '%'
+    password: glance
+    priv: 'glance.*:ALL'
+    state: present
+- name: Create Glance user, service and endpoint in Keystone
+  shell: |
+    . ~/openrc
+    if (( "$(openstack user list -f value -c Name | grep -c glance)" == "0" ))
+    then
+      openstack user create --domain default --password glance glance
+    fi
+    openstack role add --project service --user glance admin
+    if (( "$(openstack service list -f value -c Name | grep -c glance)" == "0" ))
+    then
+      openstack service create --name glance --description "OpenStack Image" image
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "glance public")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne image public http://{{ ansible_default_ipv4.address }}:9292
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "glance internal")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne image internal http://{{ ansible_default_ipv4.address }}:9292
+    fi
+    if (( "$(openstack endpoint list -f value -c "Service Name" -c "Interface" | grep -c "glance admin")" == "0" ))
+    then
+      openstack endpoint create --region RegionOne image admin http://{{ ansible_default_ipv4.address }}:9292
+    fi
+  args:
+    executable: /bin/bash
+- name: Install Glance
+  apt:
+    name:
+      - glance
+    update_cache: yes
+- name: Configure Glance
+  template:
+    src: 'templates/{{ item }}.j2'
+    dest: '/etc/glance/{{ item }}'
+  with_items:
+    - glance-api.conf
+    - glance-registry.conf
+- name: Populate glance database
+  shell: |
+    su -s /bin/sh -c "glance-manage db_sync" glance
+- name: Restart Glance services
+  service:
+    name: '{{ item }}'
+    state: restarted
+  with_items:
+    - glance-registry
+    - glance-api
+- name: Download Cirros image
+  get_url:
+    url: "http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img"
+    dest: "/tmp/cirros.img"
+- name: Upload Cirros image to Glance and check that it works
+  shell: |
+    source ~/openrc
+    if (( $(openstack image list -f value -c Name | grep -c cirros) == 0))
+    then
+      openstack image create "cirros" --file /tmp/cirros.img --disk-format qcow2 --container-format bare --public
+    fi
+    openstack image list
+  args:
+    executable: /bin/bash
+  retries: 3
+  delay: 10
