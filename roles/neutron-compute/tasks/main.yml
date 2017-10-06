@@ -1,12 +1,11 @@
 ---
-
 - name: Install Neutron on computes
   apt:
     name: neutron-linuxbridge-agent
     update_cache: yes
 - name: Configure Neutron on computes
   template:
-    src: 'templates/neutron/compute/{{ item }}.j2'
+    src: '{{ item }}.j2'
     dest: '/etc/neutron/{{ item }}'
   with_items:
     - neutron.conf

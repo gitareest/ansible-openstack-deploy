@@ -1,5 +1,4 @@
 ---
-
 - name: Create Glance Database
   mysql_db:
     name: glance
@@ -44,7 +43,7 @@
     update_cache: yes
 - name: Configure Glance
   template:
-    src: 'templates/{{ item }}.j2'
+    src: '{{ item }}.j2'
     dest: '/etc/glance/{{ item }}'
   with_items:
     - glance-api.conf

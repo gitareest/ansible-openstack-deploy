@@ -1,5 +1,4 @@
 ---
-
 - name: Create Neutron Database
   mysql_db:
     name: neutron
@@ -49,7 +48,7 @@
     update_cache: yes
 - name: Configure Neutron on controllers
   template:
-    src: 'templates/neutron/controller/{{ item }}.j2'
+    src: '{{ item }}.j2'
     dest: '/etc/neutron/{{ item }}'
   with_items:
     - neutron.conf
@@ -93,3 +92,14 @@
     - neutron-dhcp-agent
     - neutron-metadata-agent
     - neutron-l3-agent
+- name: Check Neutron services
+  shell: |
+    source ~/openrc
+    for SERVICE in neutron-metadata-agent neutron-linuxbridge-agent neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent
+    do
+      if (( "$(openstack network agent list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
+      then
+        echo "Can't see service ${SERVICE} in the output of 'openstack network agent list' command"
+        exit 1
+      fi
+    done

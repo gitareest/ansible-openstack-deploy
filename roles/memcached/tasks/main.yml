@@ -5,13 +5,11 @@
       - memcached
       - python-memcache
     update_cache: yes
-
 - name: Configure Memcached
   replace:
     dest: /etc/memcached.conf
     regexp: '^-l 127\.0\.0\.1'
     replace: '-l 0.0.0.0'
-
 - name: Restart Memcached service
   service:
     name: memcached

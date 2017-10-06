@@ -1,61 +1,17 @@
 ---
-- hosts: env-1
-  tasks:
-    - name: Preparation
-      include: ./preparation.yml
 - hosts: controllers
-  tasks:
-    - name: Deploy MariaDB
-      include: ./mariadb.yml
-    - name: Deploy RabbitMQ
-      include: ./rabbitmq.yml
-    - name: Deploy Memcached
-      include: ./memcached.yml
-    - name: Deploy Keystone
-      include: ./keystone.yml
-    - name: Deploy Glance
-      include: ./glance.yml
-    - name: Deploy Nova on controllers
-      include: ./nova-controller.yml
+  roles:
+  - common_openstack_node
+  - mariadb
+  - rabbitmq
+  - memcached
+  - keystone
+  - glance
+  - nova-controller
+  - neutron-controller
+  - horizon
 - hosts: computes
-  tasks:
-    - name: Deploy Nova on computes
-      include: ./nova-compute.yml
-- hosts: controllers
-  tasks:
-    - name: Check Nova services
-      shell: |
-        source ~/openrc
-        for SERVICE in nova-consoleauth nova-scheduler nova-conductor nova-compute
-        do
-          if (( "$(openstack compute service list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
-          then
-            echo "Can't see service ${SERVICE} in the output of 'openstack compute service list' command"
-            exit 1
-          fi
-        done
-      args:
-        executable: /bin/bash
-- hosts: controllers
-  tasks:
-    - name: Deploy Neutron on controllers
-      include: ./neutron-controller.yml
-- hosts: computes
-  tasks:
-    - name: Deploy Neutron on computes
-      include: ./neutron-compute.yml
-- hosts: controllers
-  tasks:
-    - name: Check Neutron services
-      shell: |
-        source ~/openrc
-        for SERVICE in neutron-metadata-agent neutron-linuxbridge-agent neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent
-        do
-          if (( "$(openstack network agent list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
-          then
-            echo "Can't see service ${SERVICE} in the output of 'openstack network agent list' command"
-            exit 1
-          fi
-        done
-    - name: Deploy Horizon
-      include: ./horizon.yml
+  roles:
+  - common_openstack_node
+  - nova-compute
+  - neutron-compute

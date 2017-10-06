@@ -1,5 +1,4 @@
 ---
-
 - name: Create Nova Database
   mysql_db:
     name: '{{ item }}'
@@ -79,8 +78,8 @@
     update_cache: yes
 - name: Configure Nova on controllers
   template:
-    src: 'templates/nova.conf.j2'
-    dest: '/etc/nova/nova.conf'
+    src: nova.conf.j2
+    dest: /etc/nova/nova.conf
 - name: Populate nova databases
   shell: |
     su -s /bin/sh -c "nova-manage api_db sync" nova
@@ -100,3 +99,16 @@
     - nova-scheduler
     - nova-conductor
     - nova-novncproxy
+- name: Check Nova services
+    shell: |
+      source ~/openrc
+      for SERVICE in nova-consoleauth nova-scheduler nova-conductor
+      do
+        if (( "$(openstack compute service list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
+        then
+          echo "Can't see service ${SERVICE} in the output of 'openstack compute service list' command"
+          exit 1
+        fi
+      done
+    args:
+      executable: /bin/bash

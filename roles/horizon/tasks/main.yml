@@ -5,8 +5,8 @@
     update_cache: yes
 - name: Configure Horizon
   template:
-    src: 'templates/openstack-dashboard/local_settings.py.j2'
-    dest: '/etc/openstack-dashboard/local_settings.py'
+    src: openstack-dashboard/local_settings.py.j2
+    dest: /etc/openstack-dashboard/local_settings.py
 - name: Workaround for https://bugs.launchpad.net/openstack-manuals/+bug/1683594
   file:
     path: /var/lib/openstack-dashboard/secret_key

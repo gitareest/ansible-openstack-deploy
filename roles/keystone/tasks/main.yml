@@ -1,5 +1,4 @@
 ---
-
 - name: Create Keystone Database
   mysql_db:
     name: keystone
@@ -18,7 +17,7 @@
     update_cache: yes
 - name: Configure Keystone
   template:
-    src: templates/keystone.conf.j2
+    src: keystone.conf.j2
     dest: /etc/keystone/keystone.conf
 - name: Populate keystone database
   shell: |
@@ -64,7 +63,7 @@
     replace: ''
 - name: Create openrc file
   template:
-    src: templates/openrc.j2
+    src: openrc.j2
     dest: ~/openrc
 - name: Check Keystone service
   shell: |
