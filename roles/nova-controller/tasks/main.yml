@@ -100,15 +100,15 @@
     - nova-conductor
     - nova-novncproxy
 - name: Check Nova services
-    shell: |
-      source ~/openrc
-      for SERVICE in nova-consoleauth nova-scheduler nova-conductor
-      do
-        if (( "$(openstack compute service list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
-        then
-          echo "Can't see service ${SERVICE} in the output of 'openstack compute service list' command"
-          exit 1
-        fi
-      done
-    args:
-      executable: /bin/bash
+  shell: |
+    source ~/openrc
+    for SERVICE in nova-consoleauth nova-scheduler nova-conductor
+    do
+      if (( "$(openstack compute service list -f value -c Binary | grep -c ${SERVICE})" == "0" ))
+      then
+        echo "Can't see service ${SERVICE} in the output of 'openstack compute service list' command"
+        exit 1
+      fi
+    done
+  args:
+    executable: /bin/bash
