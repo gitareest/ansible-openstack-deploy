@@ -1,4 +1,5 @@
 ---
+- name: sudo
 - name: Install required packages
   apt:
     name:
