@@ -8,6 +8,10 @@
   template:
     src: nova.conf.j2
     dest: /etc/nova/nova.conf
+- name: Delete nova-compute.conf overrite file
+  file:
+    path: /etc/nova/nova-compute.conf
+    state: absent
 - name: Configure QEMU if there is no hardware virt support on the computes
   shell: |
     if (( $(egrep -c '(vmx|svm)' /proc/cpuinfo) < 1 ))
