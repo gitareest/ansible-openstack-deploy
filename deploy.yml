@@ -1,5 +1,8 @@
 ---
 - hosts: controllers
+  remote_user: ubuntu
+  become: yes
+  become_user: root
   roles:
   - common_openstack_node
   - mariadb
@@ -11,6 +14,9 @@
   - neutron-controller
   - horizon
 - hosts: computes
+  remote_user: ubuntu
+  become: yes
+  become_user: root
   roles:
   - common_openstack_node
   - nova-compute

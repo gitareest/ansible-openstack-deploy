@@ -1,20 +1,16 @@
 ---
-- name: Enable ssh access for root user
-  remote_user: ubuntu
-  copy:
-    src: /home/ubuntu/.ssh/authorized_keys
-    dest: /root/.ssh/authorized_keys
-    remote_src: yes
-  become: yes
 - name: Install required packages
   apt:
     name:
       - software-properties-common
       - python-mysqldb
+      - python-pip
     update_cache: yes
 - name: Add OpenStack repository
   shell: "add-apt-repository -y cloud-archive:ocata"
 - name: Install OpenStack client
-  apt:
+  pip:
     name:
+      - pip
       - python-openstackclient
+  extra_args: --upgrade
