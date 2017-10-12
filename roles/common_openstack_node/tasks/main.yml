@@ -1,5 +1,11 @@
 ---
-- name: sudo
+- name: Enable ssh access for root user
+  remote_user: ubuntu
+  copy:
+    src: /home/ubuntu/.ssh/authorized_keys
+    dest: /root/.ssh/authorized_keys
+    remote_src: yes
+  become: yes
 - name: Install required packages
   apt:
     name:
